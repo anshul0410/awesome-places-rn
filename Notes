@@ -1,0 +1,145 @@
+Notes starting from device orientation: 
+
+** // screens are react component (stateful) which will load through navigation
+// just like container in web, which are loaded from route
+
+// react-native-styling-cheat-sheet -> tells where we can use style and what style are
+// supported
+
+**  we cannot use cascading css as in web such that giving color to div renders child
+ element color as the same. DOES NOT WORK IN RN
+ we can only cascade Text with Text i.e wrapping Text with another Text and giving the
+ higher level text a color will give its child element text the same color
+
+ REACT_NATIVE_STYLE_SHEET_CHEAT GIVES INFO ABOUT WHAT STYLE CAN BE USED ON WHAT COMPONENT
+
+** // Dimensions.addEventListner('change') -> listens to change in the orientation of device
+        // we use this to render different style in portrait and other mode.
+        // This is not efficient method
+        // Better method is to create 2 styles: 1 for portrait and 2nd landscape,
+        // and render style according to addEventListener change
+
+** We have an API from react-native -  Dimensions which can be used to know if a user has 
+changed the orientation of the device, i.e to portrait mode 
+
+get() current dimensions -- uses 1. window   2. screen
+IN ANDROID -> window does not include soft menu bar, but screen does.
+Generally we use Dimensions.get("window")
+
+** Dimensions also provide us the ability to "listen" to dimension changes and thus we can style 
+our screen for portrait mode . When this happens we can addEventListener("change") to change event.
+
+
+** When we use Dimensions.addEventListener(....) we create a memory leak if we do not remove
+Dimensions in Auth.js when it is not opened. So we need to use componentWillUnmount and remove
+dimension using Dimensions.removeEventListner('change', dims => {
+    here we use the same function which was used to addEventListener, so that it can get removed
+})
+Best way to do this is to create an arrow function which can be common to both addEventListener and 
+removeEventListener
+
+** we style the toggleDrawer style using navigatorStyle: {}
+ we use static navigatorStyle: { navBarButtonColor: 'orange' } 
+
+** tabsStyle is used to style the tabs in app, see react-native-navigation DOCS
+    tabsStyle: {
+        tabBarSelectedButtonColor: "orange"
+    },
+    to style tabs in android we need to use appStyle, see react-native-navigation DOCS
+    appStyle: {
+        tabBarSelectedButtonColor: "orange"
+    }
+
+** For animation we use Animated API provided by react-native
+in state we define : { removeAnim: new Animation.value(1) } This gives an initial animation value of 1, 
+we wrap an element which is to be animated with Animation.View.
+in Find Places we will perform 2 animation 1st is removing button on click with opacity and 2nd scaling button
+
+in handler function we use Animated.timing() function IMP, 
+here we pass this.state.removeAnim defined above with initial animation value,
+we configure timing function
+
+Animated.timing(this.state.removeAnim, {
+    toValue: 0   -> the value till which u want to animate to
+    duration: 500   -> duration in which u want the value to go from 1 to 0 500 milliseconds
+    useNativeDriver: true   -> increase efficiency, always keep it true
+}).start();
+
+we wrap the elem which is to be animated with Animated.View
+
+<Animated.View style={{
+    opacity: this.state.removeAnim,
+    transform: [
+        {
+            scale: this.state.removeAnim.interpolate({    this helps to scale button more when value 
+                                                           change from 1 to 0
+                                                           at input 1 -> scale 1, at 0 -> scale 12 
+                inputRange: [0, 1],
+                outputRange: [12, 1]
+            })
+        }
+    ]
+}}>
+
+
+** in Animation.timing(this.staet.removeAnim, ...}).start({
+    we can define what to do when animations has finished
+    // we will use this to load out places list starting from opacity 0 to 1,
+    by calling a function which starts this new animation for list
+
+    in our example we will also setstate placesLoaded to true
+})
+
+
+** DEFAULT INPUT file
+
+** input style here is the default style which will be shown everywhere this default input
+    is used.
+    to use this default style of input and change some style like background color,
+    we pass the style prop from the component where we will use this defaultInput which 
+    require some different style.
+    and use array syntax to pass both style such that 
+    style={[styles.input, props.style]}  the defaultInput style is 1st as only 
+    backgroundColor property is updated from props.style
+
+** In react-native documentation - look for TextInput, there we have different properties which 
+can be used no TextInput field like autoCorrect={false}, autoCapitalize="none", 
+keyboardType -> which we can use for different type of textinput like email-address, number-pad
+secureTextEntry -> use it for password field
+
+** import keyboardAvoidingView -> to push the content by providing some padding when
+keyboard is active both in android/ios -> replace the view with keyboardAvoidingView
+-> we have behaviour = "padding" property in keyboardAvoidingView which gives some padding bottom
+when keyboard is active.
+
+** we can also dismiss keyboard on clicking somewhere in the input container in auth js
+import Keyboard -> wrap the input container in auth js with TouchableWithoutFeedback 
+and there onPress={Keyboard.dismiss}
+
+** React-native-maps -> use airbnb documentation for react-native-maps
+npm install --save react-native-maps
+
+Manually install for ios:
+1. right click on libraries in xcode project
+2. add files on rncourse
+3. node_modules -> react-native-maps -> lib -> ios -> select Airmaps.xcodeproj add
+4. click on project name rncourse -> build phases -> link binary with library -> + btn ->
+search maps -> select libairmaps.a
+
+FOR ANDROID: 
+1. use documentation
+
+
+** for maps we import MapView from 'react-native-maps'
+
+MapView requires property initialRegion, 
+we create a state which stores the information about what location to display initially
+
+latitude -> latitude of the location,
+longitude -> longitude of the location,
+latitudeDelta -> how much more region to cover on map on langitude,
+longitudeDelta -> how much more region to cover on map on longitude
+
+if we set latitudeDelta: 0.1123 then we must set 
+longitudeDelta: Dimensions.get('window').width / Dimensions.get('window').height * 0.1123
+to maintain aspect ratio.
